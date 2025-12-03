@@ -240,9 +240,10 @@
           data-item="New Virals"
           data-price="29"
           data-qr="qr-new-virals.png"
-        >
+          onclick="placeOrder('New Virals', 29)">I PAID for New Virals
+      >
           Buy for ₹29
-        </button>
+      </button>  
       </div>
 
       <!-- Item 2 -->
@@ -256,6 +257,7 @@
           data-item="Other Viral"
           data-price="49"
           data-qr="qr-other-viral.png"
+          onclick="placeOrder('Trending Pack', 49)">I PAID for Trending Pack
         >
           Buy for ₹49
         </button>
@@ -272,6 +274,7 @@
           data-item="Special Pack"
           data-price="99"
           data-qr="qr-special-pack.png"
+          onclick="placeOrder('Premium Pack', 99)">I PAID for Premium Pack
         >
           Buy for ₹99
         </button>
@@ -386,6 +389,36 @@
       paymentForm.reset();
       modalBackdrop.classList.remove("show");
     });
-  </script>
+
+  async function placeOrder(item, price) {
+    const username = prompt("Enter your Telegram username (without @)");
+
+    if (!username) {
+      alert("Username is required.");
+      return;
+    }
+
+    try {
+      const res = await fetch("https://content-store-backend.onrender.com/order", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          username,
+          item,
+          price
+        })
+      });
+
+      const data = await res.json();
+      console.log(data);
+      alert("Order sent! Check your Telegram.");
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong sending the order.");
+    }
+  }
+</script>
 </body>
 </html>
