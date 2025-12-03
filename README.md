@@ -1,1 +1,1 @@
-it's a content stoer where i share my content.
+it's a content store where i share my content.
