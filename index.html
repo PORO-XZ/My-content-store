@@ -328,100 +328,91 @@
   </div>
 
   <script>
-    const buyButtons = document.querySelectorAll(".buy-btn");
-    const modalBackdrop = document.getElementById("modalBackdrop");
-    const closeModalBtn = document.getElementById("closeModal");
-    const selectedItemEl = document.getElementById("selectedItem");
-    const selectedPriceEl = document.getElementById("selectedPrice");
-    const qrImage = document.getElementById("qrImage");
-    const paymentForm = document.getElementById("paymentForm");
-    const telegramUsernameInput = document.getElementById("telegramUsername");
-    const paymentScreenshotInput = document.getElementById("paymentScreenshot");
+  const buyButtons = document.querySelectorAll(".buy-btn");
+  const modalBackdrop = document.getElementById("modalBackdrop");
+  const closeModalBtn = document.getElementById("closeModal");
+  const selectedItemEl = document.getElementById("selectedItem");
+  const selectedPriceEl = document.getElementById("selectedPrice");
+  const qrImage = document.getElementById("qrImage");
+  const paymentForm = document.getElementById("paymentForm");
+  const telegramUsernameInput = document.getElementById("telegramUsername");
+  const paymentScreenshotInput = document.getElementById("paymentScreenshot");
 
-    buyButtons.forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const itemName = btn.dataset.item;
-        const price = btn.dataset.price;
-        const qrPath = btn.dataset.qr;
+  // open modal + set product data
+  buyButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const itemName = btn.dataset.item;
+      const price = btn.dataset.price;
+      const qrPath = btn.dataset.qr;
 
-        selectedItemEl.textContent = itemName;
-        selectedPriceEl.textContent = price;
-        qrImage.src = qrPath;     // 🔥 load the product-specific QR
-        qrImage.alt = itemName + " QR";
+      selectedItemEl.textContent = itemName;
+      selectedPriceEl.textContent = price;
+      qrImage.src = qrPath;
+      qrImage.alt = itemName + " QR";
 
-        modalBackdrop.classList.add("show");
-      });
+      modalBackdrop.classList.add("show");
     });
+  });
 
-    closeModalBtn.addEventListener("click", () => {
+  closeModalBtn.addEventListener("click", () => {
+    modalBackdrop.classList.remove("show");
+  });
+
+  modalBackdrop.addEventListener("click", (e) => {
+    if (e.target === modalBackdrop) {
       modalBackdrop.classList.remove("show");
-    });
+    }
+  });
 
-    modalBackdrop.addEventListener("click", (e) => {
-      if (e.target === modalBackdrop) {
-        modalBackdrop.classList.remove("show");
-      }
-    });
+  // ✅ On submit: send username + item + price + screenshot to backend
+  paymentForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-    // ✅ Now submit sends data to backend (after username + screenshot)
-    paymentForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
+    const username = telegramUsernameInput.value.trim();
+    const file = paymentScreenshotInput.files[0];
+    const itemName = selectedItemEl.textContent;
+    const price = selectedPriceEl.textContent;
 
-      const username = telegramUsernameInput.value.trim();
-      const file = paymentScreenshotInput.files[0];
-      const itemName = selectedItemEl.textContent;
-      const price = selectedPriceEl.textContent;
+    if (!username || !file) {
+      alert("Please enter your Telegram username and upload screenshot.");
+      return;
+    }
 
-      if (!username || !file) {
-        alert("Please enter your Telegram username and upload screenshot.");
+    // build FormData for multipart/form-data
+    const formData = new FormData();
+    formData.append("username", username);              // user typed @ or not, backend handles it
+    formData.append("item", itemName);
+    formData.append("price", price);
+    formData.append("paymentScreenshot", file);        // 👈 this is the SS
+
+    try {
+      const res = await fetch("https://content-store-backend.onrender.com/order", {
+        method: "POST",
+        body: formData
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        alert("Order failed: " + (data.message || "unknown error"));
         return;
       }
 
-      try {
-        await placeOrder(itemName, price, username);
+      alert(
+        "Thanks! Your payment proof is submitted.\n\n" +
+        "Item: " + itemName +
+        "\nAmount: ₹" + price +
+        "\nTelegram: " + username +
+        "\n\nThe owner will verify payment manually."
+      );
 
-        alert(
-          "Thanks! Your payment proof is submitted.\n\n" +
-          "Item: " + itemName +
-          "\nAmount: ₹" + price +
-          "\nTelegram: " + username +
-          "\n\nThe owner will verify payment manually."
-        );
-
-        paymentForm.reset();
-        modalBackdrop.classList.remove("show");
-      } catch (err) {
-        alert("Order could not be sent, please try again ❌");
-      }
-    });
-
-    // ✅ Uses your existing backend /order to notify Telegram bot
-    async function placeOrder(item, price, username) {
-      try {
-        const res = await fetch("https://content-store-backend.onrender.com/order", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            username,
-            item,
-            price
-          })
-        });
-
-        const data = await res.json();
-
-        if (!data.success) {
-          throw new Error(data.message || "unknown error");
-        }
-
-        return data;
-      } catch (err) {
-        console.error(err);
-        throw err;
-      }
+      paymentForm.reset();
+      modalBackdrop.classList.remove("show");
+    } catch (err) {
+      console.error(err);
+      alert("Server error, please try again later ❌");
     }
-  </script>
+  });
+</script> 
 </body>
 </html>
