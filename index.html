@@ -390,35 +390,40 @@
       modalBackdrop.classList.remove("show");
     });
 
-  async function placeOrder(item, price) {
-    const username = prompt("Enter your Telegram username (without @)");
+  
+async function placeOrder(item, price) {
+  const username = prompt("Enter your Telegram username (without @)");
 
-    if (!username) {
-      alert("Username is required.");
-      return;
-    }
-
-    try {
-      const res = await fetch("https://content-store-backend.onrender.com/order", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          username,
-          item,
-          price
-        })
-      });
-
-      const data = await res.json();
-      console.log(data);
-      alert("Order sent! Check your Telegram.");
-    } catch (err) {
-      console.error(err);
-      alert("Something went wrong sending the order.");
-    }
+  if (!username) {
+    alert("Telegram username is required.");
+    return;
   }
+
+  try {
+    const res = await fetch("https://content-store-backend.onrender.com/order", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        username,
+        item,
+        price
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      alert("Order sent! Check your Telegram ✅");
+    } else {
+      alert("Order failed: " + (data.message || "unknown error"));
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Server error, try again later ❌");
+  }
+}
 </script>
 </body>
 </html>
