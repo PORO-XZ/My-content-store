@@ -240,9 +240,9 @@
           data-item="New Virals"
           data-price="29"
           data-qr="qr-new-virals.png"
-      >
+        >
           Buy for ₹29
-      </button>  
+        </button>  
       </div>
 
       <!-- Item 2 -->
@@ -316,8 +316,8 @@
           required
         />
 
-        <button type="submit" class="submit-btn" onclick="placeOrder" >Submit Payment Proof</button>
-        
+        <!-- no onclick here, submit handled in JS -->
+        <button type="submit" class="submit-btn">Submit Payment Proof</button>
         
         <p class="note">
           After you submit, the owner will verify your payment manually and add you on Telegram / to the group.
@@ -362,7 +362,8 @@
       }
     });
 
-    paymentForm.addEventListener("submit", (e) => {
+    // ✅ Now submit sends data to backend (after username + screenshot)
+    paymentForm.addEventListener("submit", async (e) => {
       e.preventDefault();
 
       const username = telegramUsernameInput.value.trim();
@@ -375,54 +376,51 @@
         return;
       }
 
-      // For now, just show a success message.
-      // Later we can connect this to your Telegram bot/backend.
-      alert(
-        "Thanks! Your payment proof is noted.\n\n" +
-        "Item: " + itemName +
-        "\nAmount: ₹" + price +
-        "\nTelegram: " + username +
-        "\n\nThe owner will verify manually."
-      );
+      try {
+        await placeOrder(itemName, price, username);
 
-      paymentForm.reset();
-      modalBackdrop.classList.remove("show");
+        alert(
+          "Thanks! Your payment proof is submitted.\n\n" +
+          "Item: " + itemName +
+          "\nAmount: ₹" + price +
+          "\nTelegram: " + username +
+          "\n\nThe owner will verify payment manually."
+        );
+
+        paymentForm.reset();
+        modalBackdrop.classList.remove("show");
+      } catch (err) {
+        alert("Order could not be sent, please try again ❌");
+      }
     });
 
-  
-async function placeOrder(item, price) {
-  const username = prompt("Enter your Telegram username (without @)");
+    // ✅ Uses your existing backend /order to notify Telegram bot
+    async function placeOrder(item, price, username) {
+      try {
+        const res = await fetch("https://content-store-backend.onrender.com/order", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            username,
+            item,
+            price
+          })
+        });
 
-  if (!username) {
-    alert("Telegram username is required.");
-    return;
-  }
+        const data = await res.json();
 
-  try {
-    const res = await fetch("https://content-store-backend.onrender.com/order", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        username,
-        item,
-        price
-      })
-    });
+        if (!data.success) {
+          throw new Error(data.message || "unknown error");
+        }
 
-    const data = await res.json();
-
-    if (data.success) {
-      alert("Order sent! Check your Telegram ✅");
-    } else {
-      alert("Order failed: " + (data.message || "unknown error"));
+        return data;
+      } catch (err) {
+        console.error(err);
+        throw err;
+      }
     }
-  } catch (err) {
-    console.error(err);
-    alert("Server error, try again later ❌");
-  }
-}
-</script>
+  </script>
 </body>
 </html>
